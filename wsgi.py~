@@ -1,0 +1,45 @@
+from cgi import parse_qs, escape
+
+
+def simple_app(environ, start_response):
+    html = """
+    <html> 
+        <b> POST: </b>
+        %(post)s
+        <b> GET: </b>
+        %(get)s
+    </html>
+    """
+    htmlfomet = """<br> Key "%(key)s" = "%(value)s" """
+    try:
+        request_body_size = int(environ.get('CONTENT_LENGTH', 0))
+    except (ValueError):
+        request_body_size = 0
+    request_body = environ['wsgi.input'].read(request_body_size)
+    dataPost = parse_qs(request_body)
+    keys = dataPost.keys()
+    post = ""
+    for k in keys:
+        post = post + htmlfomet % {
+                'key': escape(k),
+                'value': dataPost[k]
+                }
+    dataGet = parse_qs(environ['QUERY_STRING'])
+    keys = dataGet.keys()
+    get = ""
+    for k in keys:
+        get = get + htmlfomet % {
+                'key': escape(k),
+                'value': dataGet[k]
+                }
+
+    response_body = html % {
+            'post': post or 'None',
+            'get': get or 'None'
+            }
+    status = '200 OK'
+    response_headlers = [('Content-type', 'text/html'),
+            ('Content-Length', str(len(response_body)))
+            ]
+    start_response(status, response_headlers)
+    return [response_body]
